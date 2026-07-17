@@ -3,6 +3,9 @@
 # daemon/Makefile -- builds on-device (Buildroot) or any Linux with libdrm
 CC      ?= gcc
 CFLAGS  ?= -O2 -Wall -Wextra
+# Version: from ../VERSION in-tree; Buildroot passes CRTPI_VERSION in.
+CRTPI_VERSION ?= $(shell cat ../VERSION 2>/dev/null || echo dev)
+CFLAGS  += -DCRTPI_VERSION=\"$(CRTPI_VERSION)\"
 CFLAGS  += $(shell pkg-config --cflags libdrm 2>/dev/null || echo -I/usr/include/libdrm)
 LDLIBS  += $(shell pkg-config --libs libdrm 2>/dev/null || echo -ldrm)
 

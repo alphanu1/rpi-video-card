@@ -1,0 +1,89 @@
+# Author: Ben Templeman (alphanu1)
+# Date:   2026-07-17
+#
+# Build the CRTPi SD image and publish a GitHub Release whenever the
+# VERSION file changes on the default branch. The release is tagged
+# v<VERSION> and carries the flashable image + sha256.
+#
+# Notes:
+# - Runs the NATIVE build (not the container path): GitHub's ubuntu-24.04
+#   runners have exactly the stable toolchain the container exists to
+#   provide, so the container would be redundant here.
+# - A full Buildroot build takes ~1.5-3h on a standard runner; well
+#   within the 6h job limit. Downloads are cached between runs.
+# - If the tag for the current VERSION already exists, the job exits
+#   cleanly without rebuilding (idempotent on re-runs/reverts).
+
+name: build-release
+
+on:
+  push:
+    branches: [master, main]
+    paths: ['VERSION']
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  image:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read version / skip if already released
+        id: ver
+        run: |
+          V="$(tr -d ' \n' < VERSION)"
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          git fetch --tags --quiet
+          if git rev-parse "v$V" >/dev/null 2>&1; then
+            echo "Tag v$V exists; nothing to do."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Free runner disk space (Buildroot needs ~20GB)
+        if: steps.ver.outputs.skip != 'true'
+        run: |
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet \
+                      /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
+          df -h /
+
+      - name: Install host prerequisites
+        if: steps.ver.outputs.skip != 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential gcc g++ make git unzip rsync bc wget cpio \
+            file libssl-dev libncurses-dev python3 perl bzip2 xz-utils
+
+      - name: Cache Buildroot downloads
+        if: steps.ver.outputs.skip != 'true'
+        uses: actions/cache@v4
+        with:
+          path: buildroot/dl
+          key: br-dl-${{ hashFiles('Makefile', 'buildroot-external/**') }}
+          restore-keys: br-dl-
+
+      - name: Build image
+        if: steps.ver.outputs.skip != 'true'
+        run: make image
+
+      - name: Package artifacts
+        if: steps.ver.outputs.skip != 'true'
+        run: |
+          V="${{ steps.ver.outputs.version }}"
+          cp buildroot/output/images/rpi-video-card.img \
+             "rpi-video-card-v$V.img"
+          sha256sum "rpi-video-card-v$V.img" > "rpi-video-card-v$V.img.sha256"
+
+      - name: Create release
+        if: steps.ver.outputs.skip != 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.ver.outputs.version }}
+          name: CRTPi v${{ steps.ver.outputs.version }}
+          generate_release_notes: true
+          files: |
+            rpi-video-card-v${{ steps.ver.outputs.version }}.img
+            rpi-video-card-v${{ steps.ver.outputs.version }}.img.sha256

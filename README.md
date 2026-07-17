@@ -18,6 +18,7 @@ mode, program vc4 DPI via KMS, report what the PLL actually achieved.*
 
 ## Repository map
 
+    VERSION                            single source of truth for releases
     docs/CODE_REVIEW_switchres_VC4.md  review of the Pi3-era VC4 branch
     docs/PROTOCOL.md                   Lane 1 wire protocol v2 ("CRT1")
     daemon/protocol.h                  wire structs (shared with host lib)
@@ -62,6 +63,26 @@ Three workflows to know:
 3. **Optional: vendor as a git submodule** and point `SWITCHRES_SITE` at
    it with `SITE_METHOD = local` — one offline-buildable tree, revision
    frozen by construction, at the cost of submodule ergonomics.
+
+## Versioning and releases
+
+The `VERSION` file at the repo root is the single source of truth. It is
+compiled into crtd (startup banner and the `CMD_GET_INFO` reply report
+`crtpi <version>`), so a host can always ask a device what it's running.
+
+Releases are automated: `.github/workflows/release.yml` triggers when
+`VERSION` changes on the default branch, builds the SD image on a GitHub
+runner, and publishes a release tagged `v<VERSION>` with
+`rpi-video-card-v<VERSION>.img` (+ sha256) attached. So cutting a
+release is exactly:
+
+    echo 0.2.0 > VERSION
+    git commit -am "Release 0.2.0" && git push
+
+The workflow is idempotent (an existing tag short-circuits it), caches
+Buildroot downloads between runs, and can also be fired manually from
+the Actions tab (workflow_dispatch). Expect ~1.5-3h per release build on
+a standard runner.
 
 ## Host side: drivers and software
 

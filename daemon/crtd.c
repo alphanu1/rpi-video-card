@@ -44,6 +44,10 @@
 
 #define FFS_DIR_DEFAULT "/dev/crtpi_ffs"
 #define CONF_DEFAULT    "/etc/crtpi.conf"
+
+#ifndef CRTPI_VERSION
+#define CRTPI_VERSION "dev"
+#endif
 #define MAX_FRAME_BYTES (2048u * 1024u)   /* 1024x512 @16bpp ceiling */
 
 /* ------------------------------------------------------------------ */
@@ -329,7 +333,8 @@ static void dispatch(struct crtd *d, const struct crt1_hdr *h,
         break;
     case CMD_GET_INFO: {
         char info[128];
-        int n = snprintf(info, sizeof(info), "crtpi v2 lane=%d profile=%s",
+        int n = snprintf(info, sizeof(info),
+                         "crtpi " CRTPI_VERSION " proto=2 lane=%d profile=%s",
                          d->lane, d->profile);
         send_evt(d, EVT_INFO, h->seq, info, (uint32_t)n);
         break;
@@ -424,7 +429,7 @@ int main(int argc, char **argv)
         perror("crtd: ep open");
         return 1;
     }
-    printf("crtd: FunctionFS up at %s, waiting for host\n", ffs);
+    printf("crtd " CRTPI_VERSION ": FunctionFS up at %s, waiting for host\n", ffs);
 
     struct pollfd pfd[2] = {
         { .fd = d.ep0,    .events = POLLIN },

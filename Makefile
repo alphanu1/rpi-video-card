@@ -41,6 +41,11 @@ $(BR_DIR)/.config: | $(BR_DIR)
 	$(MAKE) -C $(BR_DIR) BR2_EXTERNAL=$(EXTERNAL) $(DEFCONFIG)
 
 image: $(BR_DIR)/.config
+	@chmod +x $(EXTERNAL)/board/crtpi4/post-image.sh \
+		$(EXTERNAL)/board/crtpi4/S90crtpi \
+		$(EXTERNAL)/board/crtpi4/rootfs-overlay/etc/init.d/S90crtpi \
+		$(EXTERNAL)/board/crtpi4/rootfs-overlay/usr/share/crtpi/gadget-setup.sh \
+		scripts/gadget-setup.sh 2>/dev/null || true
 	$(MAKE) -C $(BR_DIR) BR2_EXTERNAL=$(EXTERNAL)
 	@echo ""
 	@echo "Image ready: $(IMAGE)"
