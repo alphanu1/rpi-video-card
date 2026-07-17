@@ -2,21 +2,35 @@
 # Date:   2026-07-17
 #
 # CRTPi defconfig -- Raspberry Pi 4 (64-bit) appliance.
-# Written against Buildroot 2024.02.x; re-diff against
-# configs/raspberrypi4_64_defconfig when bumping BR_VERSION, since the
-# rpi-firmware/kernel option names drift between releases.
+# Targeted at Buildroot 2025.08.x (bumped from 2024.02 because old
+# Buildroot's host packages fail to compile under host GCC >= 15 -- the
+# gnulib/_GL_ATTRIBUTE_NODISCARD m4 failure). If any option below is
+# rejected on first configure, re-diff against the release's own
+# configs/raspberrypi4_64_defconfig -- rpi-firmware/kernel option names
+# drift between Buildroot releases.
 
 BR2_aarch64=y
 BR2_cortex_a72=y
 
 # Toolchain: Buildroot-built, glibc + C++ (switchres needs C++/libstdc++)
+# The custom kernel tarball (below) is a 6.1-series rpi kernel; with a
+# CUSTOM_TARBALL Buildroot cannot infer the headers series, and leaving it
+# unset defaults to "2.6", which silently disqualifies glibc (needs
+# headers >= 3.2) and drops the toolchain to uclibc. Declare it. Keep this
+# in lockstep with the kernel pin when bumping.
+BR2_KERNEL_HEADERS_AS_KERNEL=y
+BR2_PACKAGE_HOST_LINUX_HEADERS_CUSTOM_6_1=y
 BR2_TOOLCHAIN_BUILDROOT_GLIBC=y
 BR2_TOOLCHAIN_BUILDROOT_CXX=y
 
 # System
 BR2_TARGET_GENERIC_HOSTNAME="crtpi"
 BR2_TARGET_GENERIC_ISSUE="CRTPi 15kHz USB display"
+BR2_TARGET_GENERIC_ROOT_PASSWD="crtpi"
 BR2_SYSTEM_DHCP="eth0"
+# SSH for headless testing (ssh root@crtpi / password crtpi). Convenience
+# for bring-up; lock down or drop for production images (M5).
+BR2_PACKAGE_DROPBEAR=y
 BR2_ROOTFS_OVERLAY="$(BR2_EXTERNAL_CRTPI_PATH)/board/crtpi4/rootfs-overlay"
 
 # Kernel: rpi fork, same version the 2024.02 rpi4_64 defconfig uses
@@ -35,11 +49,13 @@ BR2_PACKAGE_RPI_FIRMWARE_VARIANT_PI4=y
 BR2_PACKAGE_RPI_FIRMWARE_CONFIG_FILE="$(BR2_EXTERNAL_CRTPI_PATH)/board/crtpi4/config.txt"
 BR2_PACKAGE_RPI_FIRMWARE_CMDLINE_FILE="$(BR2_EXTERNAL_CRTPI_PATH)/board/crtpi4/cmdline.txt"
 
-# Rootfs image: reuse Buildroot's stock rpi4 genimage recipe
+# Rootfs image: our own genimage recipe (static file list; the stock rpi
+# post-image script's kernel-name substitution came up empty under this
+# config and broke boot.vfat). Produces rpi-video-card.img directly.
 BR2_TARGET_ROOTFS_EXT2=y
 BR2_TARGET_ROOTFS_EXT2_4=y
 BR2_TARGET_ROOTFS_EXT2_SIZE="120M"
-BR2_ROOTFS_POST_IMAGE_SCRIPT="board/raspberrypi4-64/post-image.sh"
+BR2_ROOTFS_POST_IMAGE_SCRIPT="$(BR2_EXTERNAL_CRTPI_PATH)/board/crtpi4/post-image.sh"
 BR2_PACKAGE_HOST_GENIMAGE=y
 BR2_PACKAGE_HOST_DOSFSTOOLS=y
 BR2_PACKAGE_HOST_MTOOLS=y

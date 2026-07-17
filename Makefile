@@ -12,16 +12,27 @@
 # ./daemon) is fetched/built from this one entry point. Requires the usual
 # Buildroot host deps: gcc, g++, make, git, unzip, rsync, bc, wget, cpio.
 
-BR_VERSION   := 2024.02.9
+BR_VERSION   := 2025.08.1
 BR_URL       := https://gitlab.com/buildroot.org/buildroot.git
 BR_DIR       := buildroot
 EXTERNAL     := $(CURDIR)/buildroot-external
 DEFCONFIG    := crtpi4_defconfig
-IMAGE        := $(BR_DIR)/output/images/sdcard.img
+IMAGE        := $(BR_DIR)/output/images/rpi-video-card.img
 
-.PHONY: all image menuconfig daemon clean-all
+.PHONY: all image image-docker menuconfig daemon clean-all
 
 all: image
+
+# Containerized build -- RECOMMENDED on rolling distros (Arch, Fedora
+# rawhide, Tumbleweed). Rolling hosts ship gcc/glibc newer than Buildroot's
+# bundled host packages can compile against (gnulib vs C23); Debian 12 in a
+# container freezes the host toolchain at tested versions. Needs docker or
+# podman. Output lands in ./buildroot/output as usual (same tree, so don't
+# mix native and container builds -- 'make clean-all' when switching).
+DOCKER ?= $(shell command -v podman 2>/dev/null || echo docker)
+image-docker:
+	$(DOCKER) build -t crtpi-build scripts/build-container
+	$(DOCKER) run --rm -it -v $(CURDIR):/work -w /work crtpi-build make image
 
 $(BR_DIR):
 	git clone --depth 1 -b $(BR_VERSION) $(BR_URL) $(BR_DIR)

@@ -2,11 +2,14 @@
 # Date:   2026-07-17
 ################################################################################
 #
-# switchres -- pin SWITCHRES_VERSION to a reviewed commit hash before release
+# switchres -- pinned to a commit hash (newer Buildroot REJECTS branch names
+# for git downloads; a full 40-char hash is mandatory). This hash is
+# alphanu1/switchres master as of 2026-07-17 (== upstream 2.2.2 sync).
+# Bump deliberately, after reviewing what changed.
 #
 ################################################################################
 
-SWITCHRES_VERSION = master
+SWITCHRES_VERSION = da27cc69b59c9c274bffae51ab148dedcf2b0a75
 SWITCHRES_SITE = https://github.com/alphanu1/switchres.git
 SWITCHRES_SITE_METHOD = git
 SWITCHRES_LICENSE = GPL-2.0+
@@ -24,16 +27,23 @@ define SWITCHRES_BUILD_CMDS
 		libswitchres
 endef
 
+# Upstream links the versioned name only (soname .so.2, no unversioned
+# symlink in the build dir); install it and create the links ourselves.
+# The 2.2.2 suffix is tied to the pinned hash -- update together.
 define SWITCHRES_INSTALL_STAGING_CMDS
 	$(INSTALL) -D -m 0644 $(@D)/switchres_wrapper.h \
 		$(STAGING_DIR)/usr/include/switchres_wrapper.h
-	$(INSTALL) -D -m 0755 $(@D)/libswitchres.so \
-		$(STAGING_DIR)/usr/lib/libswitchres.so
+	$(INSTALL) -D -m 0755 $(@D)/libswitchres.so.2.2.2 \
+		$(STAGING_DIR)/usr/lib/libswitchres.so.2.2.2
+	ln -sf libswitchres.so.2.2.2 $(STAGING_DIR)/usr/lib/libswitchres.so.2
+	ln -sf libswitchres.so.2 $(STAGING_DIR)/usr/lib/libswitchres.so
 endef
 
 define SWITCHRES_INSTALL_TARGET_CMDS
-	$(INSTALL) -D -m 0755 $(@D)/libswitchres.so \
-		$(TARGET_DIR)/usr/lib/libswitchres.so
+	$(INSTALL) -D -m 0755 $(@D)/libswitchres.so.2.2.2 \
+		$(TARGET_DIR)/usr/lib/libswitchres.so.2.2.2
+	ln -sf libswitchres.so.2.2.2 $(TARGET_DIR)/usr/lib/libswitchres.so.2
+	ln -sf libswitchres.so.2 $(TARGET_DIR)/usr/lib/libswitchres.so
 	$(INSTALL) -D -m 0644 $(@D)/switchres.ini \
 		$(TARGET_DIR)/etc/switchres.ini
 endef

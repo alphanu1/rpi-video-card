@@ -1,0 +1,5 @@
+# Author: Ben Templeman (alphanu1)
+# Date:   2026-07-17
+# udev rule: unprivileged access to the CRTPi Lane 1 vendor interface.
+# Install: sudo cp 99-crtpi.rules /etc/udev/rules.d/ && sudo udevadm control --reload
+SUBSYSTEM=="usb", ATTRS{idVendor}=="1209", ATTRS{idProduct}=="0001", MODE="0660", TAG+="uaccess"
