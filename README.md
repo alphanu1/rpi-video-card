@@ -85,6 +85,32 @@ M5 — **Polish.** Read-only rootfs A/B, <5s boot, interlace kernel patches
 
 ## Building the image (M2)
 
+### Host prerequisites (Linux PC — the build cross-compiles for the Pi)
+
+Debian / Ubuntu:
+
+    sudo apt install build-essential gcc g++ make git unzip rsync bc wget \
+        cpio file libssl-dev libncurses-dev python3 perl bzip2 xz-utils
+
+Fedora / RHEL-family equivalent:
+
+    sudo dnf install gcc gcc-c++ make git unzip rsync bc wget cpio file \
+        openssl-devel ncurses-devel python3 perl bzip2 xz which
+
+Notes:
+- `rsync` is required by Buildroot for local-source packages (crtd) and
+  the rootfs overlay — its absence only surfaces mid-build, so install it
+  up front. `libncurses-dev` is only needed for `make menuconfig`;
+  `libssl-dev` is needed by the kernel build.
+- Disk: ~15-20 GB free. RAM: 4 GB+ recommended. No root needed for the
+  build itself. First build compiles a full cross-toolchain (30-90 min);
+  later builds are incremental.
+- WSL2 works; keep the tree on the Linux filesystem (not /mnt/c).
+- For `make daemon` (native build of crtd/crt_apply for M1 bench work),
+  the only extra host package is `libdrm-dev` (Fedora: `libdrm-devel`).
+
+### Build
+
 One command; everything else is fetched automatically:
 
     git clone <this repo> crtpi && cd crtpi
