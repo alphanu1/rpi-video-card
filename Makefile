@@ -34,10 +34,13 @@ image-docker:
 	$(DOCKER) build -t crtpi-build scripts/build-container
 	$(DOCKER) run --rm -it -v $(CURDIR):/work -w /work crtpi-build make image
 
-$(BR_DIR):
+# Clone is keyed on a real file inside the tree, not the bare directory --
+# an empty buildroot/ dir (e.g. from a stray gitlink in a checkout) must
+# still trigger the clone. git clone into an existing empty dir is fine.
+$(BR_DIR)/Makefile:
 	git clone --depth 1 -b $(BR_VERSION) $(BR_URL) $(BR_DIR)
 
-$(BR_DIR)/.config: | $(BR_DIR)
+$(BR_DIR)/.config: | $(BR_DIR)/Makefile
 	$(MAKE) -C $(BR_DIR) BR2_EXTERNAL=$(EXTERNAL) $(DEFCONFIG)
 
 image: $(BR_DIR)/.config
