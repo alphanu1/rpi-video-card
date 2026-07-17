@@ -31,6 +31,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Show what was checked out (diagnostics)
+        run: |
+          echo "ref=${GITHUB_REF} sha=${GITHUB_SHA}"
+          git log -1 --oneline
+          echo "--- repo root ---"
+          ls -la
+          echo "--- buildroot-external/configs ---"
+          ls -la buildroot-external/configs/ || echo "MISSING: configs dir"
+
       - name: Read version / skip if already released
         id: ver
         run: |
