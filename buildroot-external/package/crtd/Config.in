@@ -1,0 +1,8 @@
+# Author: Ben Templeman (alphanu1)
+# Date:   2026-07-17
+config BR2_PACKAGE_CRTD
+	bool "crtd"
+	select BR2_PACKAGE_LIBDRM
+	help
+	  CRTPi device daemon: Lane 1 vendor USB protocol service, DRM
+	  modeline applier, and the crt_apply bring-up harness.

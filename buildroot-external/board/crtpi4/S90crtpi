@@ -1,0 +1,18 @@
+#!/bin/sh
+# Author: Ben Templeman (alphanu1)
+# Date:   2026-07-17
+# /etc/init.d/S90crtpi -- bring up gadget, start crtd, bind UDC
+case "$1" in
+  start)
+    /usr/share/crtpi/gadget-setup.sh
+    start-stop-daemon -S -b -x /usr/bin/crtd -- /dev/crtpi_ffs /etc/crtpi.conf
+    # give crtd a moment to write ep0 descriptors, then bind the UDC
+    sleep 1
+    UDC=$(ls /sys/class/udc | head -n1)
+    echo "$UDC" > /sys/kernel/config/usb_gadget/crtpi/UDC
+    ;;
+  stop)
+    echo "" > /sys/kernel/config/usb_gadget/crtpi/UDC 2>/dev/null
+    start-stop-daemon -K -x /usr/bin/crtd
+    ;;
+esac

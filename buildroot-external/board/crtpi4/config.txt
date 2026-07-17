@@ -1,0 +1,28 @@
+# Author: Ben Templeman (alphanu1)
+# Date:   2026-07-17
+# board/crtpi4/config.txt -- Raspberry Pi 4 firmware config for CRTPi
+#
+# Full KMS + DPI output + USB device (gadget) mode. No HDMI needed in
+# production; keep it for bring-up (kernel console).
+
+# --- display: vc4 full KMS, DPI via GPIO0-21 (vga666-style resistor DAC) ---
+dtoverlay=vc4-kms-v3d
+# Generic KMS DPI panel overlay: mode is set at runtime by crtd, but the
+# overlay must declare bus format/pins. VERIFY the overlay name & parameters
+# against the kernel you pin (vc4-kms-dpi-generic exists in recent rpi
+# kernels; rgb666 mapping matches vga666 wiring). Interlace needs the
+# Recalbox-CRT/RGB-Pi vc4 patches -- vendored in our kernel tree (M4).
+dtoverlay=vc4-kms-dpi-generic,rgb666-padhi,hactive=320,hfp=8,hsync=31,hbp=48,vactive=240,vfp=4,vsync=3,vbp=15,clock-frequency=6400000
+enable_dpi_lcd=0
+
+# --- USB device mode on the USB-C port ---
+dtoverlay=dwc2,dr_mode=peripheral
+
+# --- appliance hygiene ---
+disable_splash=1
+boot_delay=0
+# keep the arm frequency governor sane for deterministic vblank service
+force_turbo=0
+
+# HDMI kept enabled for early bring-up consoles; disable for production:
+# hdmi_blanking=2

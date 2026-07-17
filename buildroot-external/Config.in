@@ -1,0 +1,4 @@
+# Author: Ben Templeman (alphanu1)
+# Date:   2026-07-17
+source "$BR2_EXTERNAL_CRTPI_PATH/package/switchres/Config.in"
+source "$BR2_EXTERNAL_CRTPI_PATH/package/crtd/Config.in"

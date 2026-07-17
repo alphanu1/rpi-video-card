@@ -1,0 +1,12 @@
+# Author: Ben Templeman (alphanu1)
+# Date:   2026-07-17
+config BR2_PACKAGE_SWITCHRES
+	bool "switchres"
+	depends on BR2_INSTALL_LIBSTDCPP
+	select BR2_PACKAGE_LIBDRM
+	help
+	  Switchres modeline generation engine (libswitchres shared lib).
+	  Built from the project fork; used by crtd for Lane 2 mode list
+	  generation, profile validation, and mode-on-demand synthesis.
+
+	  https://github.com/alphanu1/switchres

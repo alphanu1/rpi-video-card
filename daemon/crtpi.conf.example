@@ -1,0 +1,32 @@
+# Author: Ben Templeman (alphanu1)
+# Date:   2026-07-17
+# /etc/crtpi.conf -- CRTPi appliance configuration
+# Lives on the FAT boot partition (symlinked) so it's editable on any PC.
+
+# Which lane owns the display at boot.
+#   native = Lane 1: verbatim modelines over the vendor USB protocol
+#            (GroovyMAME / RetroArch / anything using the host library)
+#   gud    = Lane 2: enumerate as a Generic USB Display (Linux plug & play)
+lane = native
+
+# Monitor profile. Seeds Lane 2's generated mode list, clamps Lane 1's
+# incoming modelines, and feeds mode-on-demand synthesis.
+#   Presets: arcade_15, arcade_15_25_31, ntsc, pal
+#   Or raw:  crt_range:15625-16200,49.5-65.0
+monitor_profile = arcade_15
+
+# Safety clamp for Lane 1. "on" rejects modelines outside the profile's
+# hfreq/vfreq window (protects fixed-frequency deflection hardware from a
+# buggy host). Power users running exotic chassis: "off".
+profile_enforce = on
+
+# --- Lane 2 (gud) options; ignored in native lane -------------------------
+# Canonical mode table height classes to generate (comma list).
+gud_heights = 224,240,256,288,448i,480i,576i
+# Curated refresh set per height (validated against the profile band).
+gud_refreshes = 50,55,57,60
+# Super-resolutions: emit 2560-wide variants so the host GPU handles
+# horizontal scaling (invisible on a CRT).
+gud_superres = on
+# Extra fully-specified user modes, switchres modeline syntax, one per line
+# in /boot/crtpi-extra-modes.txt
