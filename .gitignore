@@ -1,0 +1,18 @@
+# CRTPi -- keep the repo to sources; build state stays local.
+
+# Buildroot tree (cloned by `make`) and everything it produces
+/buildroot/
+
+# Native daemon build artifacts
+daemon/*.o
+daemon/crtd
+daemon/crt_apply
+
+# Flashable images if copied to the repo root
+*.img
+*.img.sha256
+
+# Editor/OS noise
+*.swp
+*~
+.DS_Store
