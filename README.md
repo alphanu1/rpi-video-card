@@ -97,6 +97,11 @@ Fedora / RHEL-family equivalent:
     sudo dnf install gcc gcc-c++ make git unzip rsync bc wget cpio file \
         openssl-devel ncurses-devel python3 perl bzip2 xz which
 
+Arch / Manjaro:
+
+    sudo pacman -S --needed base-devel git unzip rsync bc wget cpio \
+        openssl ncurses python perl
+
 Notes:
 - `rsync` is required by Buildroot for local-source packages (crtd) and
   the rootfs overlay — its absence only surfaces mid-build, so install it
@@ -107,7 +112,8 @@ Notes:
   later builds are incremental.
 - WSL2 works; keep the tree on the Linux filesystem (not /mnt/c).
 - For `make daemon` (native build of crtd/crt_apply for M1 bench work),
-  the only extra host package is `libdrm-dev` (Fedora: `libdrm-devel`).
+  the only extra host package is `libdrm-dev` (Fedora: `libdrm-devel`,
+  Arch: `libdrm`).
 
 ### Build
 
