@@ -1,7 +1,8 @@
 # CRTPi -- keep the repo to sources; build state stays local.
 
 # Buildroot tree (cloned by `make`) and everything it produces
-/buildroot/
+buildroot/
+buildroot-external/
 
 # Native daemon build artifacts
 daemon/*.o
