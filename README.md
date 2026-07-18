@@ -147,6 +147,23 @@ anything exotic (tri-sync chassis, PVMs with wide bands, etc.).
 Runtime override: `CMD_SET_PROFILE` — in Lane 2 this also regenerates
 the mode list and re-enumerates (M4).
 
+    splash = on | off
+
+The powered-on idle pattern: 320x240 SMPTE color bars with a 1px white
+geometry border and a live status readout — version, active lane,
+monitor profile, clamp band, and host state — shown at boot and
+whenever the USB host disconnects. A CRT proves the device+DAC chain
+works and displays its configuration with no PC involved; the border
+doubles as a centering reference. This is exactly what the device
+draws (rendered from the same color tables as the code):
+
+![Idle splash pattern -- shown when powered with no USB host connected](docs/img/splash-pattern.png)
+
+The pattern is timed at 60Hz,
+falling back to 50Hz for PAL-band profiles; both candidates are checked
+against the profile clamp first, so the splash can never emit sync your
+profile forbids. `off` leaves the display untouched until a host speaks.
+
     profile_enforce = on | off
 
 The safety clamp on Lane 1. `on` (default) rejects modelines whose

@@ -49,6 +49,14 @@ int drm_out_set_mode(struct drm_out *o, const struct wire_modeline *m,
  * failure. Also used to service EVT_VSYNC when the daemon runs it async. */
 uint32_t drm_out_measure_vfreq_uhz(struct drm_out *o, int n);
 
+/* Draw the idle/splash test pattern (SMPTE bars + 1px geometry border)
+ * into the current scanout buffer. */
+int drm_out_draw_testpattern(struct drm_out *o);
+
+/* Draw a status line: opaque white-on-black 8x12 cells at pixel x,y. */
+int drm_out_draw_text(struct drm_out *o, uint32_t x, uint32_t y,
+                      const char *s);
+
 /* Try to read the clock vc4 actually programmed, from
  * /sys/kernel/debug/dri/N/state (adjusted mode line). Returns Hz or 0. */
 uint32_t drm_out_readback_clock_hz(struct drm_out *o);

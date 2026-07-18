@@ -370,3 +370,86 @@ void drm_out_close(struct drm_out *o)
         o->fd = -1;
     }
 }
+
+/* ------------------------------------------------------------------ */
+/* Test pattern: 8 SMPTE-style bars + 1px white geometry border.       */
+/* Drawn into the current scanout buffer; used as the powered-on/idle  */
+/* splash so a CRT shows life with no USB host connected.              */
+/* ------------------------------------------------------------------ */
+
+int drm_out_draw_testpattern(struct drm_out *o)
+{
+    static const uint32_t bars32[8] = {
+        0x00FFFFFF, 0x00FFFF00, 0x0000FFFF, 0x0000FF00,
+        0x00FF00FF, 0x00FF0000, 0x000000FF, 0x00000000
+    };
+    static const uint16_t bars16[8] = {
+        0xFFFF, 0xFFE0, 0x07FF, 0x07E0, 0xF81F, 0xF800, 0x001F, 0x0000
+    };
+    uint32_t x, y;
+
+    if (!o->map || !o->width || !o->height)
+        return -1;
+
+    for (y = 0; y < o->height; y++) {
+        uint8_t *row = o->map + (uint64_t)y * o->pitch;
+        int edge_y = (y == 0 || y == o->height - 1);
+        for (x = 0; x < o->width; x++) {
+            int idx = (int)(x * 8 / o->width);
+            int edge = edge_y || x == 0 || x == o->width - 1;
+            if (o->bpp == 16)
+                ((uint16_t *)row)[x] = edge ? 0xFFFF : bars16[idx];
+            else
+                ((uint32_t *)row)[x] = edge ? 0x00FFFFFF : bars32[idx];
+        }
+    }
+    return 0;
+}
+
+/* ------------------------------------------------------------------ */
+/* Minimal text renderer for the splash status readout. Opaque 8x12    */
+/* cells: white glyph on black, so text is legible over the bars.      */
+/* ------------------------------------------------------------------ */
+
+#include "font8x12.h"
+
+static void put_cell(struct drm_out *o, uint32_t cx, uint32_t cy,
+                     const uint8_t *glyph)
+{
+    uint32_t gx, gy;
+    for (gy = 0; gy < FONT_H; gy++) {
+        uint32_t y = cy + gy;
+        uint8_t bits = glyph[gy];
+        uint8_t *row;
+        if (y >= o->height)
+            return;
+        row = o->map + (uint64_t)y * o->pitch;
+        for (gx = 0; gx < FONT_W; gx++) {
+            uint32_t x = cx + gx;
+            int on = bits & (0x80 >> gx);
+            if (x >= o->width)
+                break;
+            if (o->bpp == 16)
+                ((uint16_t *)row)[x] = on ? 0xFFFF : 0x0000;
+            else
+                ((uint32_t *)row)[x] = on ? 0x00FFFFFF : 0x00000000;
+        }
+    }
+}
+
+int drm_out_draw_text(struct drm_out *o, uint32_t x, uint32_t y,
+                      const char *s)
+{
+    if (!o->map)
+        return -1;
+    for (; *s; s++) {
+        unsigned c = (unsigned char)*s;
+        if (c < 32 || c > 126)
+            c = '?';
+        put_cell(o, x, y, font8x12[c - 32]);
+        x += FONT_W;
+        if (x + FONT_W > o->width)
+            break;
+    }
+    return 0;
+}

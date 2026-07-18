@@ -152,6 +152,7 @@ struct crtd {
     /* config */
     char profile[256];
     int enforce;
+    int splash;
     int lane;                       /* 1=native, 2=gud */
     double clamp_hfreq_min, clamp_hfreq_max;
     double clamp_vfreq_min, clamp_vfreq_max;
@@ -187,6 +188,7 @@ static void load_config(struct crtd *d, const char *path)
     strcpy(d->profile, "arcade_15");
     d->enforce = 1;
     d->lane = 1;
+    d->splash = 1;
 
     FILE *f = fopen(path, "r");
     if (f) {
@@ -199,6 +201,8 @@ static void load_config(struct crtd *d, const char *path)
                 snprintf(d->profile, sizeof(d->profile), "%s", val);
             else if (!strcmp(key, "profile_enforce"))
                 d->enforce = strcmp(val, "off") != 0;
+            else if (!strcmp(key, "splash"))
+                d->splash = strcmp(val, "off") != 0;
             else if (!strcmp(key, "lane"))
                 d->lane = strcmp(val, "gud") ? 1 : 2;
         }
@@ -234,6 +238,69 @@ static void send_status(struct crtd *d, uint16_t seq, uint16_t st)
 {
     struct status_evt e = { .seq_echo = seq, .status = st };
     send_evt(d, EVT_STATUS, seq, &e, sizeof(e));
+}
+
+/* ------------------------------------------------------------------ */
+/* Idle splash: 320x240 SMPTE bars when powered but no host driving us. */
+/* Candidates are tried against the profile clamp so a PAL-only or      */
+/* custom-range profile never gets out-of-band sync from our own hands. */
+/* ------------------------------------------------------------------ */
+
+static int mode_fits_clamp(const struct crtd *d, uint32_t pclk,
+                           uint16_t htot, uint16_t vtot, int interlace)
+{
+    double hf, vf;
+    if (!d->enforce)
+        return 1;
+    if (!htot || !vtot)
+        return 0;
+    hf = (double)pclk / htot;
+    vf = hf / vtot * (interlace ? 2.0 : 1.0);
+    return hf >= d->clamp_hfreq_min && hf <= d->clamp_hfreq_max &&
+           vf >= d->clamp_vfreq_min && vf <= d->clamp_vfreq_max;
+}
+
+static void splash_show(struct crtd *d)
+{
+    /* 320x240 progressive: ~60Hz NTSC-timed, then ~50Hz PAL-timed. */
+    static const struct wire_modeline cand[2] = {
+        { .pclock_hz = 6400000, .hactive = 320, .hbegin = 328,
+          .hend = 359, .htotal = 407, .vactive = 240, .vbegin = 244,
+          .vend = 247, .vtotal = 262, .mode_flags = 0,
+          .pixfmt = PIXFMT_XRGB8888 },
+        { .pclock_hz = 6359375, .hactive = 320, .hbegin = 328,
+          .hend = 359, .htotal = 407, .vactive = 240, .vbegin = 269,
+          .vend = 272, .vtotal = 312, .mode_flags = 0,
+          .pixfmt = PIXFMT_XRGB8888 },
+    };
+    struct mode_result res;
+    int i;
+
+    if (!d->splash)
+        return;
+    for (i = 0; i < 2; i++) {
+        if (!mode_fits_clamp(d, cand[i].pclock_hz, cand[i].htotal,
+                             cand[i].vtotal, 0))
+            continue;
+        if (drm_out_set_mode(&d->out, &cand[i], &res) == 0) {
+            char l1[64], l2[64], l3[64];
+            uint32_t ty = d->out.height - 3 * 12 - 6;
+            drm_out_draw_testpattern(&d->out);
+            snprintf(l1, sizeof(l1), " CRTPI %.10s  320X240 %s ",
+                     CRTPI_VERSION, i ? "50HZ" : "60HZ");
+            snprintf(l2, sizeof(l2), " LANE %s  PROFILE %.16s ",
+                     d->lane == 2 ? "GUD" : "NATIVE", d->profile);
+            snprintf(l3, sizeof(l3), " H %.0f-%.0f V %.0f-%.0f  NO HOST ",
+                     d->clamp_hfreq_min, d->clamp_hfreq_max,
+                     d->clamp_vfreq_min, d->clamp_vfreq_max);
+            drm_out_draw_text(&d->out, 8, ty, l1);
+            drm_out_draw_text(&d->out, 8, ty + 12, l2);
+            drm_out_draw_text(&d->out, 8, ty + 24, l3);
+            printf("crtd: splash up (320x240 %s)\n", i ? "50Hz" : "60Hz");
+            return;
+        }
+    }
+    fprintf(stderr, "crtd: splash skipped (no candidate fits profile)\n");
 }
 
 /* ------------------------------------------------------------------ */
@@ -376,6 +443,7 @@ static int service_ep0(struct crtd *d)
     case FUNCTIONFS_UNBIND:
         printf("crtd: function disabled\n");
         d->bound = 0;
+        splash_show(d);         /* host gone -> put the idle pattern back */
         break;
     case FUNCTIONFS_SETUP:
         /* No class-specific ep0 traffic in v2; stall by reading/writing 0 */
@@ -409,6 +477,8 @@ int main(int argc, char **argv)
         if (drm_out_open(&d.out, 0) < 0)
             return 1;
     }
+
+    splash_show(&d);            /* powered-on pattern before any host */
 
     snprintf(path, sizeof(path), "%s/ep0", ffs);
     d.ep0 = open(path, O_RDWR);

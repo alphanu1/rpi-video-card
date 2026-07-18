@@ -20,6 +20,12 @@ monitor_profile = arcade_15
 # buggy host). Power users running exotic chassis: "off".
 profile_enforce = on
 
+# Powered-on idle pattern: 320x240 SMPTE bars + 1px geometry border,
+# shown at boot and whenever the USB host disconnects. 60Hz-timed, with
+# a 50Hz fallback for PAL-band profiles; both are checked against the
+# profile clamp first. "off" = display untouched until a host speaks.
+splash = on
+
 # --- Lane 2 (gud) options; ignored in native lane -------------------------
 # Canonical mode table height classes to generate (comma list).
 gud_heights = 224,240,256,288,448i,480i,576i
