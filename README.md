@@ -392,6 +392,22 @@ rather patch than containerize:
 
 ## Hardware
 
+**Connection: the Pi 4's USB-C port goes to the PC.** It's the only port
+on the board wired to the dwc2 controller, and therefore the only one
+capable of gadget (device) mode — the four USB-A ports are host-only
+silicon and cannot do this job. Use a data-capable USB-C cable (many
+are charge-only).
+
+**Power: normally none extra needed.** The same USB-C cable carries
+power, and a headless CRTPi draws ~400-600mA — within the 900mA a USB 3
+port (blue) must supply. Prefer a USB 3 port; a USB 2 port (500mA) is
+marginal. Undervoltage shows as spontaneous reboots or the device
+enumerating then vanishing. If you do need external power, feed 5V via
+the GPIO header's 5V/GND pins or use a USB-C power/data splitter —
+never a second supply into the same USB-C jack. Note the port choice
+affects current only: dwc2 is USB 2.0 High Speed (480Mbps) either way,
+ample for 15kHz frame streaming.
+
 DPI GPIO0-21 through a vga666-style resistor DAC (RGB666). Same sync rules
 as ever: csync via the DPI sync line or an external XNOR, 470R into SCART.
 The Pi 4's USB-C port is the device port; power the board through the GPIO
